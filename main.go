@@ -15,7 +15,7 @@ import (
 )
 
 type Todo struct {
-	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Completed bool               `json:"completed"`
 	Body      string             `json:"body"`
 }
@@ -26,13 +26,18 @@ func main() {
 	fmt.Println("Hello world")
 	app := fiber.New()
 
-	err := godotenv.Load(".env")
+	/*app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:5173/",
+		AllowHeaders: "Orgin,Content-Type,Accept",
+	}))*/
 
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if os.Getenv("ENV") != "production" {
+		err := godotenv.Load(".env")
+
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
-
-	PORT := os.Getenv("PORT")
 
 	MONGODB_URI := os.Getenv("MONGODB_URI")
 
@@ -60,7 +65,17 @@ func main() {
 	app.Patch("/api/todos/:id", updateTodo)
 	app.Delete("/api/todos/:id", deleteTodo)
 
-	log.Fatal(app.Listen(":" + PORT))
+	if os.Getenv("ENV") == "production" {
+		app.Static("/", "./FE/dist")
+	}
+
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "5000"
+	}
+
+	log.Fatal(app.Listen(":" + port))
 }
 
 func getTodos(c *fiber.Ctx) error {
